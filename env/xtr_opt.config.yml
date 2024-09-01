@@ -1,0 +1,2 @@
+BEIR_COLLECTION_PATH: "/home/jlscheerer/datasets/gcp/datasets/beir/datasets/"
+LOTTE_COLLECTION_PATH: "/home/jlscheerer/datasets/gcp/lotte/lotte/"

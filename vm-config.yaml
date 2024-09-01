@@ -1,0 +1,23 @@
+resources:
+- name: xtr-warp-machine
+  type: compute.v1.instance
+  properties:
+    zone: europe-west3-a
+    machineType: zones/europe-west3-a/machineTypes/n2-standard-2
+    disks:
+    - deviceName: boot
+      type: PERSISTENT
+      boot: true
+      autoDelete: true
+      initializeParams:
+        sourceImage: projects/ubuntu-os-pro-cloud/global/images/ubuntu-pro-1604-xenial-v20240801
+        diskSizeGb: 100
+    networkInterfaces:
+    - network: global/networks/default
+      accessConfigs:
+      - name: External NAT
+        type: ONE_TO_ONE_NAT
+    serviceAccounts:
+    - email: xtr-warp-service@xtr-warp.iam.gserviceaccount.com
+      scopes:
+      - https://www.googleapis.com/auth/cloud-platform
