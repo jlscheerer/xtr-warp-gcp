@@ -38,18 +38,25 @@ ssh-keyscan github.com >> ~/.ssh/known_hosts
 # Clone the GitHub repositories required for evaluation
 git clone git@github.com:jlscheerer/xtr-warp.git
 git clone git@github.com:jlscheerer/xtr-eval.git
+git clone git@github.com:jlscheerer/colbert-eval.git
 
 # Configure XTR/WARP repository with environment paths
 cp ~/env/xtr_warp.env ~/xtr-warp/.env
+
+# Configure xtr-eval repository with environment paths
+cp ~/env/xtr_opt.config.yml ~/xtr-eval/config.yml
+
+# Configure colbert-eval repository with environment paths
+cp ~/env/xtr_warp.env ~/colbert-eval/.env
 
 # Prepare the Conda Environment for XTR/WARP
 cd xtr-warp
 ${CONDA_PATH} env create -f conda_env_cpu.yml
 
 # We need to install torch-scatter manually
-conda activate xtr-warp
+conda activate warp
 TORCH_VERSION=$(python -c "import torch; print(torch.__version__)")
-pip install torch-scatter -f "https://data.pyg.org/whl/torch-${TORCH_VERSION}.html"
+pip install --no-cache-dir torch-scatter -f "https://data.pyg.org/whl/torch-${TORCH_VERSION}.html"
 conda deactivate
 cd ..
 
@@ -60,8 +67,7 @@ cp /usr/include/crypt.h "${CONDA_ROOT}/envs/warp/include/"
 echo "export CPATH=\"${CONDA_ROOT}/envs/warp/include\"" >> ~/.bashrc
 export CPATH="${CONDA_ROOT}/envs/warp/include"
 
-
-# Configure the Conda Environment for XTROpt
+# Configure the Conda Environment for xtr-eval
 cd xtr-eval
 git checkout opt
 ${CONDA_PATH} env create -f environment.yml
@@ -69,9 +75,17 @@ ${CONDA_PATH} env create -f environment.yml
 # We need to install torch-scatter manually
 conda activate xtr-eval
 TORCH_VERSION=$(python -c "import torch; print(torch.__version__)")
-pip install torch-scatter -f "https://data.pyg.org/whl/torch-${TORCH_VERSION}.html"
+pip install --no-cache-dir torch-scatter -f "https://data.pyg.org/whl/torch-${TORCH_VERSION}.html"
 conda deactivate
 cd ..
 
-# Configure XTROpt repository with environment paths
-cp ~/env/xtr_opt.config.yml ~/xtr-eval/config.yml
+# Configure the Conda Environment for colbert-eval
+cd colbert-eval
+${CONDA_PATH} env create -f conda_env_cpu.yml
+
+# We need to install torch-scatter manually
+conda activate colbert
+TORCH_VERSION=$(python -c "import torch; print(torch.__version__)")
+pip install --no-cache-dir torch-scatter -f "https://data.pyg.org/whl/torch-${TORCH_VERSION}.html"
+conda deactivate
+cd ..

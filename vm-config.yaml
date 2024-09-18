@@ -10,7 +10,7 @@ resources:
       boot: true
       autoDelete: true
       initializeParams:
-        sourceImage: projects/ubuntu-os-pro-cloud/global/images/ubuntu-pro-1604-xenial-v20240801
+        sourceImage: projects/ubuntu-os-cloud/global/images/ubuntu-2004-focal-v20240830
         diskSizeGb: 100
     networkInterfaces:
     - network: global/networks/default

@@ -1,5 +1,6 @@
 import os
 import argparse
+import json
 import getpass
 
 USERNAME = getpass.getuser()
@@ -8,17 +9,13 @@ BEIR_DATASETS = ["nfcorpus", "scifact", "scidocs", "fiqa", "webis-touche2020", "
 LOTTE_DATASETS = ["lifestyle", "writing", "recreation", "technology", "science", "pooled"]
 
 BEIR_COLLECTION_PATH = "datasets/gcp/datasets/beir/datasets"
-LOTTE_COLLECTION_PATH = "datasets/gcp/datasets/lotte/lotte/"
+LOTTE_COLLECTION_PATH = "datasets/gcp/datasets/lotte/lotte"
 
 # Used to update existing indexes to the new configuration values.
-PRE_INDEX_ROOT="\\/future\\/u\\/scheerer\\/home\\/data\\/xtr-warp\\/indexes"
-PRE_EXPERIMENT_ROOT="\\/future\\/u\\/scheerer\\/home\\/development\\/xtr-warp\\/experiments"
 PRE_BEIR_COLLECTION_PATH="\\/lfs\\/1\\/scheerer\\/datasets\\/beir\\/datasets"
 PRE_LOTTE_COLLECTION_PATH="\\/lfs\\/1\\/scheerer\\/datasets\\/lotte\\/lotte"
 PRE_XTR_OPT_INDEX_ROOT="/future/u/scheerer/home/data/xtr-eval/indexes"
 
-POST_INDEX_ROOT=f"\\/home\\/{USERNAME}\\/data\\/xtr-warp\\/indexes"
-POST_EXPERIMENT_ROOT=f"\\/home\\/{USERNAME}\\/data\\/xtr-warp\\/experiments"
 POST_BEIR_COLLECTION_PATH=f"\\/home\\/{USERNAME}\\/datasets\\/gcp\\/datasets\\/beir\\/datasets"
 POST_LOTTE_COLLECTION_PATH=f"\\/home\\/{USERNAME}\\/datasets\\/gcp\\/lotte\\/lotte"
 POST_XTR_OPT_INDEX_ROOT=f"/home/{USERNAME}/data/xtr-eval/indexes"
@@ -31,8 +28,9 @@ def ensure_collection_exists(collection):
             print(f"#> BEIR collection located at './{BEIR_COLLECTION_PATH}'")
             return
         print("#> BEIR collection does not exist. Pulling collection...")
-        os.system("gsutil cp gs://xtr_warp_datasets/beir.tar.gz datasets/")
-        os.system("tar -xvzf datasets/beir.tar.gz -C datasets/")
+        os.makedirs(f"/home/{USERNAME}/datasets/gcp/datasets", exist_ok=True)
+        os.system("gsutil cp gs://xtr_warp_datasets/beir.tar.gz datasets/gcp/datasets")
+        os.system("tar -xvzf datasets/gcp/datasets/beir.tar.gz -C datasets/gcp/datasets")
     elif collection == "lotte":
         if os.path.exists(LOTTE_COLLECTION_PATH):
             print(f"#> LoTTE collection located at './{LOTTE_COLLECTION_PATH}'")
@@ -54,16 +52,72 @@ def pull_xtr_warp_index(collection, dataset, split, nbits):
     print("#> Index does not exist. Pulling...")
     os.system(f"gsutil cp gs://xtr_warp_indices/{index_name}.tar.gz data/")
     os.system(f"tar -xvzf 'data/{index_name}.tar.gz' -C data/xtr-warp/indexes")
+    os.system(f"rm data/{index_name}.tar.gz")
 
-    for file in ["metadata.json", "plan.json"]:
-        config_file = f"data/xtr-warp/indexes/{index_name}/{file}"
-        os.system(f"sed -i \"s#{PRE_INDEX_ROOT}#{POST_INDEX_ROOT}#g\" {config_file}")
-        os.system(f"sed -i \"s#{PRE_EXPERIMENT_ROOT}#{POST_EXPERIMENT_ROOT}#g\" {config_file}")
-        os.system(f"sed -i \"s#{PRE_BEIR_COLLECTION_PATH}#{POST_BEIR_COLLECTION_PATH}#g\" {config_file}")
-        os.system(f"sed -i \"s#{PRE_LOTTE_COLLECTION_PATH}#{POST_LOTTE_COLLECTION_PATH}#g\" {config_file}")
+    PRE_INDEX_ROOT="/future/u/scheerer/home/data/xtr-warp/indexes"
+    POST_INDEX_ROOT=f"/home/{USERNAME}/data/xtr-warp/indexes"
+
+    PRE_EXPERIMENT_ROOT="/future/u/scheerer/home/development/xtr-warp/experiments"
+    POST_EXPERIMENT_ROOT=f"/home/{USERNAME}/data/xtr-warp/experiments"
+
+    PRE_BEIR_COLLECTION_PATH="/lfs/1/scheerer/datasets/beir/datasets"
+    PRE_LOTTE_COLLECTION_PATH="/lfs/1/scheerer/datasets/lotte/lotte"
+
+    for meta_file in ["metadata.json", "plan.json"]:
+        config_file = f"data/xtr-warp/indexes/{index_name}/{meta_file}"
+        with open(config_file, "r") as file:
+            meta = json.loads(file.read())
+        meta["config"]["index_path"] = meta["config"]["index_path"].replace(
+            PRE_INDEX_ROOT, POST_INDEX_ROOT
+        )
+        meta["config"]["root"] = meta["config"]["root"].replace(
+            PRE_EXPERIMENT_ROOT, POST_EXPERIMENT_ROOT
+        )
+        meta["config"]["collection"] = meta["config"]["collection"].replace(
+            PRE_BEIR_COLLECTION_PATH, f"/home/{USERNAME}/{BEIR_COLLECTION_PATH}"
+        ).replace(PRE_LOTTE_COLLECTION_PATH, f"/home/{USERNAME}/{LOTTE_COLLECTION_PATH}")
+        with open(config_file, "w") as file:
+            file.write(json.dumps(meta, indent=3))
+
 
 def pull_colbert_index(collection, dataset, split):
-    index_name = f"{dataset}.split={splits}.nbits=2"
+    if not os.path.exists("models"):
+        os.makedirs("models")
+    if not os.path.exists("models/colbertv2.0"):
+        print("#> colbertv2.0 checkpoint does not exist. Pulling...")
+        os.system(f"gsutil cp gs://xtr-warp-models/colbertv2.0.tar.gz models/")
+        os.system(f"tar -xvzf 'models/colbertv2.0.tar.gz' -C models/")
+        os.system(f"rm models/colbertv2.0.tar.gz")
+
+    index_name = f"{dataset}.split={split}.nbits=2"
+    if not os.path.exists("colbert-eval/experiments/eval/indexes"):
+        os.makedirs("colbert-eval/experiments/eval/indexes")
+    if os.path.exists(f"colbert-eval/experiments/eval/indexes/{index_name}"):
+        print(f"#> colbert-eval index located at 'colbert-eval/experiments/eval/indexes/{index_name}'")
+        return
+
+    print("#> Index does not exist. Pulling...")
+    os.system(f"gsutil cp gs://colbert_plaid_indices/{index_name}.tar.gz colbert-eval/experiments/eval/indexes")
+    os.system(f"tar -xvzf 'colbert-eval/experiments/eval/indexes/{index_name}.tar.gz' -C colbert-eval/experiments/eval/indexes")
+    os.system(f"rm colbert-eval/experiments/eval/indexes/{index_name}.tar.gz")
+
+    PRE_BEIR_COLLECTION_PATH="/lfs/1/scheerer/datasets/beir/datasets"
+    PRE_LOTTE_COLLECTION_PATH="/lfs/1/scheerer/datasets/lotte/lotte"
+
+    POST_INDEX_ROOT=f"\\/home\\/{USERNAME}\\/colbert-eval\\/experiments"
+    POST_CHECKPOINT=f"/home/{USERNAME}/models/colbertv2.0"
+
+    for meta_file in ["metadata.json", "plan.json"]:
+        config_file = f"colbert-eval/experiments/eval/indexes/{index_name}/{meta_file}"
+        with open(config_file, "r") as file:
+            meta = json.loads(file.read())
+        meta["config"]["root"] = POST_INDEX_ROOT
+        meta["config"]["checkpoint"] = POST_CHECKPOINT
+        meta["config"]["collection"] = meta["config"]["collection"].replace(
+            PRE_BEIR_COLLECTION_PATH, f"/home/{USERNAME}/{BEIR_COLLECTION_PATH}"
+        ).replace(PRE_LOTTE_COLLECTION_PATH, f"/home/{USERNAME}/{LOTTE_COLLECTION_PATH}")
+        with open(config_file, "w") as file:
+            file.write(json.dumps(meta, indent=3))
 
 def pull_xtr_eval_index(collection, dataset, split, index):
     collection_name = "BEIR" if collection == "beir" else "LoTTE"
@@ -81,12 +135,11 @@ def pull_xtr_eval_index(collection, dataset, split, index):
     print("#> Index does not exist. Pulling...")
     os.system(f"gsutil cp gs://xtr_baseline_indices/{index_name}.tar.gz data/")
     os.system(f"tar -xvzf 'data/{index_name}.tar.gz' -C data/xtr-eval/indexes")
+    os.system(f"rm data/{index_name}.tar.gz")
 
-    # Apply changes to the configurations files
-    # [Sic] this will just fail for non ScaNN indexes...
-    # Apply changes to the configuration files
-    config_file = f"data/xtr-eval/indexes/{index_name}/scann/scann_assets.pbtxt"
-    os.system(f"sed -i \"s#{PRE_XTR_OPT_INDEX_ROOT}#{POST_XTR_OPT_INDEX_ROOT}#g\" {config_file}")
+    if index == "scann":
+        config_file = f"data/xtr-eval/indexes/{index_name}/scann/scann_assets.pbtxt"
+        os.system(f"sed -i \"s#{PRE_XTR_OPT_INDEX_ROOT}#{POST_XTR_OPT_INDEX_ROOT}#g\" {config_file}")
 
 def main():
     parser = argparse.ArgumentParser(prog="index_pull.py")
