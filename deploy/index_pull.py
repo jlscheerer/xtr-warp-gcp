@@ -121,6 +121,10 @@ def pull_colbert_index(collection, dataset, split):
 
 def pull_xtr_eval_index(collection, dataset, split, index):
     collection_name = "BEIR" if collection == "beir" else "LoTTE"
+    if dataset == "fiqa":
+        dataset = "fiqa_2018"
+    elif dataset == "webis-touche2020":
+        dataset = "touche_2020"
     dataset_name = f"{dataset.upper()}.search" if collection == "lotte" else dataset.upper()
     index_type = "BRUTE_FORCE" if index == "bruteforce" else index.upper()
     index_name = f"{collection_name}.{dataset_name}.split={split}.XTRIndexType.{index_type}"
@@ -141,11 +145,30 @@ def pull_xtr_eval_index(collection, dataset, split, index):
         config_file = f"data/xtr-eval/indexes/{index_name}/scann/scann_assets.pbtxt"
         os.system(f"sed -i \"s#{PRE_XTR_OPT_INDEX_ROOT}#{POST_XTR_OPT_INDEX_ROOT}#g\" {config_file}")
 
+def pull_index(parser, engine, collection, dataset, split, nbits, index):
+    if collection == "beir":
+        if dataset not in BEIR_DATASETS:
+            parser.print_help()
+            return
+    elif collection == "lotte":
+        if dataset not in LOTTE_DATASETS:
+            parser.print_help()
+            return
+    else: raise AssertionError
+
+    if engine == "xtr-warp":
+        pull_xtr_warp_index(collection, dataset, split, nbits)
+    elif engine == "colbert-eval":
+        pull_colbert_index(collection, dataset, split)
+    elif engine == "xtr-eval":
+        pull_xtr_eval_index(collection, dataset, split, index)
+    else: raise AssertionError
+
 def main():
     parser = argparse.ArgumentParser(prog="index_pull.py")
     parser.add_argument("engine", choices=["xtr-warp", "colbert-eval", "xtr-eval"])
     parser.add_argument("-c", "--collection", choices=["beir", "lotte"], required=True)
-    parser.add_argument("-d", "--dataset", choices=LOTTE_DATASETS + BEIR_DATASETS, required=True)
+    parser.add_argument("-d", "--dataset", choices=LOTTE_DATASETS + BEIR_DATASETS)
     parser.add_argument("-s", "--split", choices=["dev", "test"], required=True)
 
     # xtr-warp specific options
@@ -155,16 +178,6 @@ def main():
     parser.add_argument("-i", "--index", choices=["bruteforce", "faiss", "scann"])
 
     args = parser.parse_args()
-
-    if args.collection == "beir":
-        if args.dataset not in BEIR_DATASETS:
-            parser.print_help()
-            return
-    elif args.collection == "lotte":
-        if args.dataset not in LOTTE_DATASETS:
-            parser.print_help()
-            return
-    else: raise AssertionError
 
     if args.engine == "xtr-warp":
         if args.nbits is None or args.index is not None:
@@ -182,15 +195,18 @@ def main():
 
     ensure_collection_exists(args.collection)
 
-    if args.engine == "xtr-warp":
-        pull_xtr_warp_index(args.collection, args.dataset, args.split, args.nbits)
-    elif args.engine == "colbert-eval":
-        pull_colbert_index(args.collection, args.dataset, args.split)
-    elif args.engine == "xtr-eval":
-        pull_xtr_eval_index(args.collection, args.dataset, args.split, args.index)
-    else: raise AssertionError
+    if args.dataset is not None:
+        return pull_index(parser, args.engine, args.collection, args.dataset, args.split, args.nbits, args.index)
 
+    print(f"#> Attempting to pull all indexes matching engine='{args.engine}', collection='{args.collection}', split='{args.split}', nbits='{args.nbits}', index='{args.index}'")
+    confirmation = input("confirm [Y]/n: ").strip().lower()
+    if len(confirmation) != 0 and confirmation != "y":
+        return
 
+    DATASETS = BEIR_DATASETS if args.collection == "beir" else LOTTE_DATASETS
+    for dataset in DATASETS:
+        print(f"#> pulling {args.engine} index {args.collection}.{dataset}...")
+        pull_index(parser, args.engine, args.collection, dataset, args.split, args.nbits, args.index)
 
 if __name__ == "__main__":
     main()
