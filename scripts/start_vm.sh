@@ -12,6 +12,7 @@ gcloud compute scp --recurse .ssh xtr-warp-machine:~/
 
 # Prepare the VM for evaluation
 gcloud compute scp deploy/setup_vm.sh xtr-warp-machine:~/
+gcloud compute scp deploy/index_pull.py xtr-warp-machine:~/
 gcloud compute ssh xtr-warp-machine --zone=europe-west3-a --command='source ~/setup_vm.sh'
 
 gcloud compute ssh xtr-warp-machine --zone=europe-west3-a
