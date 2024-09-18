@@ -3,7 +3,7 @@ resources:
   type: compute.v1.instance
   properties:
     zone: europe-west3-a
-    machineType: zones/europe-west3-a/machineTypes/n2-standard-2
+    machineType: zones/europe-west3-a/machineTypes/n2-highmem-8
     disks:
     - deviceName: boot
       type: PERSISTENT

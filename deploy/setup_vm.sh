@@ -97,9 +97,9 @@ done
 # Addresses issue related to missing crpyt.h, see: https://github.com/stanford-futuredata/ColBERT/issues/309
 export PATH="${CONDA_ROOT}/bin:$PATH"
 sudo apt-get install -y libc6-dev
-cp /usr/include/crypt.h "${CONDA_ROOT}/envs/colbert/include/"
-echo "export CPATH=\"${CONDA_ROOT}/envs/colbert/include\"" >> ~/.bashrc
-export CPATH="${CONDA_ROOT}/envs/colbert/include"
+cp /usr/include/crypt.h "${CONDA_ROOT}/envs/warp/include/"
+echo "export CPATH=\"${CONDA_ROOT}/envs/warp/include\"" >> ~/.bashrc
+export CPATH="${CONDA_ROOT}/envs/warp/include"
 
 # Create (expected) folder structure for XTR/WARP
 mkdir -p ~/data/xtr-eval/indexes
