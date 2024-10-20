@@ -11,7 +11,7 @@ resources:
       autoDelete: true
       initializeParams:
         sourceImage: projects/ubuntu-os-cloud/global/images/ubuntu-2004-focal-v20240830
-        diskSizeGb: 100
+        diskSizeGb: 256
     networkInterfaces:
     - network: global/networks/default
       accessConfigs:

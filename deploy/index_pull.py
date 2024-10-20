@@ -17,7 +17,7 @@ PRE_LOTTE_COLLECTION_PATH="\\/lfs\\/1\\/scheerer\\/datasets\\/lotte\\/lotte"
 PRE_XTR_OPT_INDEX_ROOT="/future/u/scheerer/home/data/xtr-eval/indexes"
 
 POST_BEIR_COLLECTION_PATH=f"\\/home\\/{USERNAME}\\/datasets\\/gcp\\/datasets\\/beir\\/datasets"
-POST_LOTTE_COLLECTION_PATH=f"\\/home\\/{USERNAME}\\/datasets\\/gcp\\/lotte\\/lotte"
+POST_LOTTE_COLLECTION_PATH=f"\\/home\\/{USERNAME}\\/datasets\\/gcp\\/datasets\\/lotte\\/lotte"
 POST_XTR_OPT_INDEX_ROOT=f"/home/{USERNAME}/data/xtr-eval/indexes"
 
 def ensure_collection_exists(collection):
